@@ -2087,3 +2087,54 @@ body { background: var(--bg); }
 .em-app[data-theme="light"] .em-room__badge-text {
   fill: #374f67;
 }
+
+/* Theme-specific controls must not inherit hard-coded colors from dark mode. */
+.em-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.58;
+}
+
+.em-app:not([data-theme="light"]) .em-button--ghost {
+  background: #1c2429;
+  border-color: #40515a;
+  color: #d5e1e0;
+}
+
+.em-app:not([data-theme="light"]) .em-button--ghost:hover:not(:disabled) {
+  background: #263239;
+  border-color: #587184;
+}
+
+.em-app:not([data-theme="light"]) .em-sidebar-metric,
+.em-app:not([data-theme="light"]) .em-energy-chart,
+.em-app:not([data-theme="light"]) .em-recommendation__cause {
+  background: #1b2328;
+  border-color: var(--line);
+}
+
+.em-app[data-theme="light"] .em-nav__item:hover,
+.em-app[data-theme="light"] .em-nav__item.is-active {
+  background: var(--surface-soft);
+  color: var(--text);
+}
+
+.em-app[data-theme="light"] .em-nav__item.is-active {
+  box-shadow: inset 0 0 0 1px #c7d8f3;
+}
+
+.em-app[data-theme="light"] .em-sidebar-metric,
+.em-app[data-theme="light"] .em-energy-chart,
+.em-app[data-theme="light"] .em-recommendation__cause {
+  background: #f8fbff;
+  border-color: #dce6f1;
+}
+
+.em-app[data-theme="light"] .em-menu button,
+.em-app[data-theme="light"] .em-search-results > button {
+  color: var(--text);
+}
+
+.em-app[data-theme="light"] .em-menu button:hover,
+.em-app[data-theme="light"] .em-search-results > button:hover {
+  background: var(--surface-soft);
+}
