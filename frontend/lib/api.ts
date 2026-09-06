@@ -217,16 +217,21 @@ const mockRecommendations: Record<string, Recommendation> = Object.fromEntries(
 
 let taskSequence = 1;
 
-async function requestApi<T>(endpoint: string, init?: RequestInit): Promise<T | null> {
+async function requestApi<T>(endpoint: string, init?: RequestInit): Promise<T | undefined> {
   const apiBase = process.env.NEXT_PUBLIC_API_URL;
+  const tenantId = process.env.NEXT_PUBLIC_TENANT_ID ?? "demo-building";
   if (!apiBase) {
-    return null;
+    return undefined;
   }
 
   const response = await fetch(`${apiBase}${endpoint}`, {
     ...init,
     cache: "no-store",
-    headers: { "Content-Type": "application/json", ...(init?.headers ?? {}) },
+    headers: {
+      "Content-Type": "application/json",
+      "X-Tenant-Id": tenantId,
+      ...(init?.headers ?? {}),
+    },
   });
   if (!response.ok) {
     throw new Error(`API request failed: ${response.status} ${response.statusText}`);
@@ -272,7 +277,7 @@ export async function getRoomDevices(roomIdValue: string): Promise<Device[]> {
 
 export async function getRecommendation(roomIdValue: string): Promise<Recommendation | null> {
   const remote = await requestApi<Recommendation>(`/rooms/${roomIdValue}/recommendation`);
-  if (remote) {
+  if (remote !== undefined) {
     return remote;
   }
   return mockRecommendations[roomIdValue] ?? null;
