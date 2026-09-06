@@ -1,0 +1,10 @@
+openapi: 3.0.3
+info:
+  title: EnergyMind API
+  version: 0.1.0
+  description: API contract for the EnergyMind application.
+servers:
+  - url: http://localhost:8000
+paths: {}
+components:
+  schemas: {}
