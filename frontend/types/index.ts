@@ -88,6 +88,10 @@ export interface Task {
   title: string;
   description: string;
   status: "open" | "done";
+  priority?: "low" | "medium" | "high";
+  createdAt?: string;
+  recommendationId?: string;
+  assignee?: string | null;
 }
 
 export interface Device {

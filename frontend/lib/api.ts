@@ -217,27 +217,78 @@ const mockRecommendations: Record<string, Recommendation> = Object.fromEntries(
 
 let taskSequence = 1;
 
+export class ApiError extends Error {
+  readonly status: number;
+  readonly code: string;
+
+  constructor(message: string, status = 0, code = "NETWORK_ERROR") {
+    super(message);
+    this.name = "ApiError";
+    this.status = status;
+    this.code = code;
+  }
+}
+
 async function requestApi<T>(endpoint: string, init?: RequestInit): Promise<T | undefined> {
-  const apiBase = process.env.NEXT_PUBLIC_API_URL;
+  const apiBase = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
   const tenantId = process.env.NEXT_PUBLIC_TENANT_ID ?? "demo-building";
-  if (!apiBase) {
+  if (process.env.NEXT_PUBLIC_USE_MOCKS === "true") {
     return undefined;
   }
 
-  const response = await fetch(`${apiBase}${endpoint}`, {
-    ...init,
-    cache: "no-store",
-    headers: {
-      "Content-Type": "application/json",
-      "X-Tenant-Id": tenantId,
-      ...(init?.headers ?? {}),
-    },
-  });
-  if (!response.ok) {
-    throw new Error(`API request failed: ${response.status} ${response.statusText}`);
+  const controller = new AbortController();
+  const timeoutId = window.setTimeout(() => controller.abort(), 10000);
+  let response: Response;
+  try {
+    response = await fetch(`${apiBase}${endpoint}`, {
+      ...init,
+      signal: controller.signal,
+      cache: "no-store",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Tenant-Id": tenantId,
+        ...(init?.headers ?? {}),
+      },
+    });
+  } catch (error) {
+    if (error instanceof DOMException && error.name === "AbortError") {
+      throw new ApiError("Сервер не ответил вовремя. Проверьте подключение и повторите попытку.", 0, "TIMEOUT");
+    }
+    throw new ApiError("Не удалось подключиться к backend. Проверьте адрес API.", 0, "NETWORK_ERROR");
+  } finally {
+    window.clearTimeout(timeoutId);
   }
 
-  return (await response.json()) as T;
+  const rawBody = await response.text();
+  let body: unknown;
+  if (rawBody.trim()) {
+    try {
+      body = JSON.parse(rawBody);
+    } catch {
+      if (response.ok) {
+        throw new ApiError("Backend вернул некорректный ответ.", response.status, "MALFORMED_RESPONSE");
+      }
+    }
+  }
+
+  if (!response.ok) {
+    const serverMessage =
+      typeof body === "object" && body !== null && "error" in body && typeof body.error === "string"
+        ? body.error
+        : response.statusText;
+    const messageByStatus: Record<number, string> = {
+      400: "Запрос содержит некорректные данные.",
+      401: "Нужна авторизация объекта. Проверьте X-Tenant-Id.",
+      403: "У вас нет доступа к этим данным.",
+      404: "Запрошенные данные не найдены.",
+      409: "Данные уже изменились. Обновите экран и повторите действие.",
+      422: "Backend не смог обработать данные.",
+      500: "Backend сообщил о внутренней ошибке.",
+    };
+    throw new ApiError(messageByStatus[response.status] ?? serverMessage, response.status, `HTTP_${response.status}`);
+  }
+
+  return body as T | undefined;
 }
 
 export async function getBuilding(): Promise<Building> {
@@ -276,11 +327,29 @@ export async function getRoomDevices(roomIdValue: string): Promise<Device[]> {
 }
 
 export async function getRecommendation(roomIdValue: string): Promise<Recommendation | null> {
-  const remote = await requestApi<Recommendation>(`/rooms/${roomIdValue}/recommendation`);
+  let remote: Recommendation | undefined;
+  try {
+    remote = await requestApi<Recommendation>(`/rooms/${roomIdValue}/recommendation`);
+  } catch (error) {
+    if (error instanceof ApiError && error.status === 404) {
+      return null;
+    }
+    throw error;
+  }
   if (remote !== undefined) {
     return remote;
   }
   return mockRecommendations[roomIdValue] ?? null;
+}
+
+export async function getRecommendations(roomIds: string[]): Promise<Recommendation[]> {
+  const recommendations = await Promise.all(roomIds.map((roomIdValue) => getRecommendation(roomIdValue)));
+  return recommendations.filter((recommendation): recommendation is Recommendation => Boolean(recommendation));
+}
+
+export async function getTasks(): Promise<Task[]> {
+  const remote = await requestApi<Task[]>("/api/tasks");
+  return remote ?? [];
 }
 
 export async function runAiAnalysis(): Promise<AnalysisSummary> {

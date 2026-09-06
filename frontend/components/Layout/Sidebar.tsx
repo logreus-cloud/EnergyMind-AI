@@ -7,6 +7,7 @@ import {
   LayoutGrid,
   Sparkles,
 } from "lucide-react";
+import { useState } from "react";
 import type { DashboardMetrics, Floor } from "../../types";
 
 interface SidebarProps {
@@ -15,6 +16,9 @@ interface SidebarProps {
   activeFloor: number;
   onSelectFloor: (floor: number) => void;
   metrics: DashboardMetrics;
+  currentPath: string;
+  onNavigate: (path: string) => void;
+  mode: "live" | "simulation";
 }
 
 const navigationItems = [
@@ -26,7 +30,18 @@ const navigationItems = [
   { id: "tasks", label: "Задачи", icon: ClipboardCheck },
 ];
 
-export function Sidebar({ buildingName, floors, activeFloor, onSelectFloor, metrics }: SidebarProps) {
+export function Sidebar({
+  buildingName,
+  floors,
+  activeFloor,
+  onSelectFloor,
+  metrics,
+  currentPath,
+  onNavigate,
+  mode,
+}: SidebarProps) {
+  const [buildingMenuOpen, setBuildingMenuOpen] = useState(false);
+
   return (
     <aside className="em-sidebar">
       <div className="em-brand">
@@ -42,8 +57,9 @@ export function Sidebar({ buildingName, floors, activeFloor, onSelectFloor, metr
           <button
             key={item.id}
             type="button"
-            className={`em-nav__item ${item.active ? "is-active" : ""}`}
-            aria-current={item.active ? "page" : undefined}
+            className={`em-nav__item ${currentPath === `/${item.id}` ? "is-active" : ""}`}
+            aria-current={currentPath === `/${item.id}` ? "page" : undefined}
+            onClick={() => onNavigate(`/${item.id}`)}
           >
             <item.icon size={16} />
             <span>{item.label}</span>
@@ -53,10 +69,22 @@ export function Sidebar({ buildingName, floors, activeFloor, onSelectFloor, metr
 
       <div className="em-sidebar__block">
         <span className="em-sidebar__label">Объект</span>
-        <button type="button" className="em-select">
+        <button
+          type="button"
+          className="em-select"
+          onClick={() => setBuildingMenuOpen((open) => !open)}
+          aria-expanded={buildingMenuOpen}
+        >
           <Building2 size={15} />
           <span>{buildingName}</span>
         </button>
+        {buildingMenuOpen && (
+          <div className="em-building-menu">
+            <strong>{buildingName}</strong>
+            <span>Единственный подключённый объект</span>
+            <small>Список зданий появится после подключения новых объектов.</small>
+          </div>
+        )}
       </div>
 
       <div className="em-sidebar__block">
@@ -92,7 +120,7 @@ export function Sidebar({ buildingName, floors, activeFloor, onSelectFloor, metr
 
       <div className="em-sidebar__footer">
         <CheckCircle2 size={14} />
-        <span>Система в симуляции</span>
+        <span>{mode === "live" ? "Backend подключён" : "Система в симуляции"}</span>
       </div>
     </aside>
   );
