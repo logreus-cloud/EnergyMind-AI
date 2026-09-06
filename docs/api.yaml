@@ -5,6 +5,117 @@ info:
   description: API contract for the EnergyMind application.
 servers:
   - url: http://localhost:8000
-paths: {}
+paths:
+  /health:
+    get:
+      summary: Проверка доступности API
+      responses:
+        "200":
+          description: API доступен
+  /api/premises:
+    get:
+      summary: Получить помещения объекта
+      parameters:
+        - $ref: "#/components/parameters/TenantId"
+      responses:
+        "200":
+          description: Список помещений
+    post:
+      summary: Создать или обновить помещение
+      parameters:
+        - $ref: "#/components/parameters/TenantId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Premise"
+      responses:
+        "201":
+          description: Помещение сохранено
+  /api/datasets:
+    post:
+      summary: Загрузить CSV с почасовым потреблением
+      parameters:
+        - $ref: "#/components/parameters/TenantId"
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file:
+                  type: string
+                  format: binary
+      responses:
+        "201":
+          description: Набор данных загружен
+  /api/analyses:
+    post:
+      summary: Найти аномалии и построить прогноз на семь дней
+      parameters:
+        - $ref: "#/components/parameters/TenantId"
+      responses:
+        "200":
+          description: Результат анализа
+  /api/tasks:
+    get:
+      summary: Получить задачи объекта
+      parameters:
+        - $ref: "#/components/parameters/TenantId"
+      responses:
+        "200":
+          description: Список задач
+    post:
+      summary: Подтвердить рекомендацию созданием задачи
+      parameters:
+        - $ref: "#/components/parameters/TenantId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [recommendationId, title]
+              properties:
+                recommendationId:
+                  type: string
+                title:
+                  type: string
+                assignee:
+                  type: string
+      responses:
+        "201":
+          description: Задача создана
 components:
-  schemas: {}
+  parameters:
+    TenantId:
+      name: X-Tenant-Id
+      in: header
+      required: true
+      schema:
+        type: string
+      description: Идентификатор объекта. Данные изолированы по этому значению.
+  schemas:
+    Premise:
+      type: object
+      required: [id, type, areaM2]
+      properties:
+        id:
+          type: string
+          example: A-203
+        type:
+          type: string
+          example: classroom
+        areaM2:
+          type: number
+          example: 48
+        workingHours:
+          type: string
+          example: 09-19
+        hasAirConditioning:
+          type: boolean
+        hasLighting:
+          type: boolean
