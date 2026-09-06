@@ -238,17 +238,18 @@ async function requestApi<T>(endpoint: string, init?: RequestInit): Promise<T | 
 
   const controller = new AbortController();
   const timeoutId = window.setTimeout(() => controller.abort(), 10000);
+  const headers = new Headers(init?.headers);
+  headers.set("X-Tenant-Id", tenantId);
+  if (!(init?.body instanceof FormData) && !headers.has("Content-Type")) {
+    headers.set("Content-Type", "application/json");
+  }
   let response: Response;
   try {
     response = await fetch(`${apiBase}${endpoint}`, {
       ...init,
       signal: controller.signal,
       cache: "no-store",
-      headers: {
-        "Content-Type": "application/json",
-        "X-Tenant-Id": tenantId,
-        ...(init?.headers ?? {}),
-      },
+      headers,
     });
   } catch (error) {
     if (error instanceof DOMException && error.name === "AbortError") {
@@ -350,6 +351,19 @@ export async function getRecommendations(roomIds: string[]): Promise<Recommendat
 export async function getTasks(): Promise<Task[]> {
   const remote = await requestApi<Task[]>("/api/tasks");
   return remote ?? [];
+}
+
+export async function uploadDataset(file: File): Promise<{ id: string; fileName: string; measurementsCount: number }> {
+  const formData = new FormData();
+  formData.append("file", file);
+  const remote = await requestApi<{ id: string; fileName: string; measurementsCount: number }>("/api/datasets", {
+    method: "POST",
+    body: formData,
+  });
+  if (!remote) {
+    throw new ApiError("Загрузка CSV недоступна в режиме симуляции.", 400, "MOCK_MODE");
+  }
+  return remote;
 }
 
 export async function runAiAnalysis(): Promise<AnalysisSummary> {

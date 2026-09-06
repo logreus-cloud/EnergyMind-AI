@@ -1,7 +1,7 @@
 "use client";
 
-import { AlertTriangle, Check, ChevronRight, ClipboardCheck, Search, Sparkles, X } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { AlertTriangle, Check, ChevronRight, ClipboardCheck, Search, Sparkles, Upload, X } from "lucide-react";
+import { type ChangeEvent, useEffect, useMemo, useRef, useState } from "react";
 import { FloorPlan } from "../components/FloorPlan/FloorPlan";
 import { KPIBar } from "../components/Dashboard/KPIBar";
 import { Sidebar } from "../components/Layout/Sidebar";
@@ -19,6 +19,7 @@ import {
   getRoomConsumption,
   getRoomDevices,
   runAiAnalysis,
+  uploadDataset,
 } from "../lib/api";
 import { EnergyChart } from "../components/RoomDetails/EnergyChart";
 import type {
@@ -178,7 +179,10 @@ export default function HomePage() {
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [recommendations, setRecommendations] = useState<Recommendation[]>([]);
   const [tasks, setTasks] = useState<Task[]>([]);
+  const [uploadedFileName, setUploadedFileName] = useState<string>();
+  const [isUploading, setIsUploading] = useState(false);
   const progressTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const currentFloor = building?.floors.find((floor) => floor.level === activeFloor);
   const allRooms = useMemo(
@@ -386,6 +390,27 @@ export default function HomePage() {
       setTasks((currentTasks) => [task, ...currentTasks]);
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : "Не удалось создать задачу");
+    }
+  };
+
+  const handleDatasetUpload = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) {
+      return;
+    }
+
+    setIsUploading(true);
+    setErrorMessage(undefined);
+    try {
+      const dataset = await uploadDataset(file);
+      setUploadedFileName(`${dataset.fileName}: ${dataset.measurementsCount} измерений`);
+      setAnalysisState("idle");
+      setAnalysisSummary(null);
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : "Не удалось загрузить CSV");
+    } finally {
+      setIsUploading(false);
+      event.target.value = "";
     }
   };
 
@@ -782,15 +807,34 @@ export default function HomePage() {
 
           <section className="em-analysis">
             <div className="em-analysis__head">
-              <Button
-                type="button"
-                variant="primary"
-                icon={<Sparkles size={14} />}
-                onClick={startAnalysis}
-                disabled={analysisState === "running"}
-              >
-                {analysisState === "running" ? "Анализируем здание..." : "Запустить AI-анализ"}
-              </Button>
+              <div className="em-analysis__actions">
+                <input
+                  ref={fileInputRef}
+                  className="em-visually-hidden"
+                  type="file"
+                  accept=".csv,text/csv"
+                  onChange={handleDatasetUpload}
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  icon={<Upload size={14} />}
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={isUploading || analysisState === "running"}
+                >
+                  {isUploading ? "Загружаем CSV..." : "Загрузить CSV"}
+                </Button>
+                <Button
+                  type="button"
+                  variant="primary"
+                  icon={<Sparkles size={14} />}
+                  onClick={startAnalysis}
+                  disabled={analysisState === "running"}
+                >
+                  {analysisState === "running" ? "Анализируем здание..." : "Запустить AI-анализ"}
+                </Button>
+                {uploadedFileName && <span className="em-analysis__dataset">{uploadedFileName}</span>}
+              </div>
               {analysisState === "complete" && analysisSummary && (
                 <div className="em-analysis__summary">
                   <span>

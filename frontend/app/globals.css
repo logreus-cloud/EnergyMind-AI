@@ -433,6 +433,30 @@ a {
   gap: 10px;
 }
 
+.em-analysis__actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.em-analysis__dataset {
+  color: var(--text-soft);
+  font-size: 12px;
+}
+
+.em-visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
 .em-analysis__summary span {
   display: block;
   color: var(--text-soft);
@@ -1967,6 +1991,51 @@ body { background: var(--bg); }
 
 .em-app[data-theme="light"] .em-sidebar {
   background: var(--surface);
+}
+
+.em-app[data-theme="light"] .em-select,
+.em-app[data-theme="light"] .em-floor-select,
+.em-app[data-theme="light"] .em-search,
+.em-app[data-theme="light"] .em-icon-btn,
+.em-app[data-theme="light"] .em-floor-list__item,
+.em-app[data-theme="light"] .em-floor-switch button,
+.em-app[data-theme="light"] .em-floor-controls button,
+.em-app[data-theme="light"] .em-filter-tabs,
+.em-app[data-theme="light"] .em-filter-tabs button,
+.em-app[data-theme="light"] .em-device-card,
+.em-app[data-theme="light"] .em-analysis__progress,
+.em-app[data-theme="light"] .em-device-totals,
+.em-app[data-theme="light"] .em-recommendation-card,
+.em-app[data-theme="light"] .em-task-row,
+.em-app[data-theme="light"] .em-anomaly-card,
+.em-app[data-theme="light"] .em-route-list__item,
+.em-app[data-theme="light"] .em-route-chart,
+.em-app[data-theme="light"] .em-state-card,
+.em-app[data-theme="light"] .em-search-results,
+.em-app[data-theme="light"] .em-popover,
+.em-app[data-theme="light"] .em-menu,
+.em-app[data-theme="light"] .em-building-menu {
+  background: #fff;
+  border-color: var(--line);
+  color: var(--text);
+}
+
+.em-app[data-theme="light"] .em-device-card.is-recommended {
+  background: #fffaf3;
+  border-color: #edd8b2;
+}
+
+.em-app[data-theme="light"] .em-filter-tabs .is-active,
+.em-app[data-theme="light"] .em-floor-list__item.is-selected,
+.em-app[data-theme="light"] .em-floor-switch button.is-selected,
+.em-app[data-theme="light"] .em-button--secondary {
+  background: #e9f2ff;
+  border-color: #c7d8f3;
+  color: #275fa9;
+}
+
+.em-app[data-theme="light"] .em-button--ghost {
+  color: var(--text-soft);
 }
 
 .em-app[data-theme="light"] .em-floor-viewport,
