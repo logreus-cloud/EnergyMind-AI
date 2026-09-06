@@ -35,3 +35,11 @@ The parser also accepts Russian column names: `время`, `помещение`
 4. `POST /api/tasks` confirms a recommendation and creates a staff task.
 
 The complete OpenAPI contract is in `../docs/api.yaml`.
+
+## Dashboard integration
+
+Set `NEXT_PUBLIC_API_URL=http://localhost:8000` and
+`NEXT_PUBLIC_TENANT_ID=demo-building` in the frontend environment. The API
+also provides the dashboard endpoints expected by the Next.js application:
+`/buildings/main`, `/metrics/dashboard`, `/anomalies`, `/rooms/:roomId/*`,
+`/analysis/run`, and `/tasks`.

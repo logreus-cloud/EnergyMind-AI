@@ -89,6 +89,87 @@ paths:
       responses:
         "201":
           description: Задача создана
+  /buildings/main:
+    get:
+      summary: Получить модель здания для интерактивного плана
+      parameters:
+        - $ref: "#/components/parameters/TenantId"
+      responses:
+        "200":
+          description: Здание и помещения с текущими статусами
+  /metrics/dashboard:
+    get:
+      summary: Получить ключевые показатели дашборда
+      parameters:
+        - $ref: "#/components/parameters/TenantId"
+      responses:
+        "200":
+          description: Потребление, число аномалий и потенциальная экономия
+  /anomalies:
+    get:
+      summary: Получить аномалии в формате дашборда
+      parameters:
+        - $ref: "#/components/parameters/TenantId"
+      responses:
+        "200":
+          description: Список аномалий
+  /rooms/{roomId}/consumption:
+    get:
+      summary: Получить потребление помещения
+      parameters:
+        - $ref: "#/components/parameters/TenantId"
+        - $ref: "#/components/parameters/RoomId"
+      responses:
+        "200":
+          description: Временной ряд фактического и базового потребления
+  /rooms/{roomId}/devices:
+    get:
+      summary: Получить устройства помещения
+      parameters:
+        - $ref: "#/components/parameters/TenantId"
+        - $ref: "#/components/parameters/RoomId"
+      responses:
+        "200":
+          description: Список устройств и их потребление
+  /rooms/{roomId}/recommendation:
+    get:
+      summary: Получить рекомендацию для помещения
+      parameters:
+        - $ref: "#/components/parameters/TenantId"
+        - $ref: "#/components/parameters/RoomId"
+      responses:
+        "200":
+          description: Рекомендация либо null при её отсутствии
+  /analysis/run:
+    post:
+      summary: Запустить анализ для дашборда
+      parameters:
+        - $ref: "#/components/parameters/TenantId"
+      responses:
+        "200":
+          description: Краткий результат анализа
+  /tasks:
+    post:
+      summary: Создать задачу из карточки помещения
+      parameters:
+        - $ref: "#/components/parameters/TenantId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [roomId, title, description]
+              properties:
+                roomId:
+                  type: string
+                title:
+                  type: string
+                description:
+                  type: string
+      responses:
+        "201":
+          description: Задача создана
 components:
   parameters:
     TenantId:
@@ -98,6 +179,12 @@ components:
       schema:
         type: string
       description: Идентификатор объекта. Данные изолированы по этому значению.
+    RoomId:
+      name: roomId
+      in: path
+      required: true
+      schema:
+        type: string
   schemas:
     Premise:
       type: object

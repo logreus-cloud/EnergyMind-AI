@@ -5,7 +5,8 @@ export function getTenantStore(tenantId) {
     tenants.set(tenantId, {
       datasets: [],
       premises: new Map(),
-      tasks: []
+      tasks: [],
+      analysis: null
     });
   }
   return tenants.get(tenantId);

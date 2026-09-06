@@ -3,6 +3,15 @@ import multer from "multer";
 import { analyzeConsumption } from "./analytics.js";
 import { parseConsumptionCsv } from "./csv.js";
 import { getTenantStore } from "./store.js";
+import {
+  createAnalysisSummary,
+  createConsumptionSeries,
+  createDashboardAnomalies,
+  createDashboardBuilding,
+  createDashboardMetrics,
+  createDashboardRecommendation,
+  createDevices
+} from "./dashboard.js";
 
 const upload = multer({
   storage: multer.memoryStorage(),
@@ -12,12 +21,24 @@ const tariffKzt = Number(process.env.ENERGY_TARIFF_KZT ?? 25);
 
 export const app = express();
 app.use(express.json());
+app.use((request, response, next) => {
+  response.setHeader(
+    "Access-Control-Allow-Origin",
+    process.env.FRONTEND_ORIGIN ?? "http://localhost:3000"
+  );
+  response.setHeader("Access-Control-Allow-Headers", "Content-Type, X-Tenant-Id");
+  response.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+  if (request.method === "OPTIONS") {
+    return response.sendStatus(204);
+  }
+  return next();
+});
 
 app.get("/health", (_request, response) => {
   response.json({ status: "ok" });
 });
 
-app.use("/api", (request, response, next) => {
+function attachTenantStore(request, response, next) {
   const tenantId = request.header("X-Tenant-Id")?.trim();
   if (!tenantId) {
     return response.status(401).json({
@@ -27,7 +48,13 @@ app.use("/api", (request, response, next) => {
 
   request.tenantStore = getTenantStore(tenantId);
   return next();
-});
+}
+
+app.use("/api", attachTenantStore);
+app.use(
+  ["/buildings", "/metrics", "/anomalies", "/rooms", "/analysis", "/tasks"],
+  attachTenantStore
+);
 
 app.post("/api/premises", (request, response) => {
   const { id, type, areaM2, workingHours, hasAirConditioning, hasLighting } =
@@ -70,6 +97,7 @@ app.post("/api/datasets", upload.single("file"), (request, response) => {
       measurements
     };
     request.tenantStore.datasets.push(dataset);
+    request.tenantStore.analysis = null;
     return response.status(201).json({
       id: dataset.id,
       fileName: dataset.fileName,
@@ -92,6 +120,7 @@ app.post("/api/analyses", (request, response) => {
       premises: request.tenantStore.premises,
       tariffKzt
     });
+    request.tenantStore.analysis = analysis;
     return response.json({ datasetId: dataset.id, ...analysis });
   } catch (error) {
     return response.status(422).json({ error: error.message });
@@ -120,6 +149,69 @@ app.post("/api/tasks", (request, response) => {
 
 app.get("/api/tasks", (request, response) => {
   response.json(request.tenantStore.tasks);
+});
+
+app.get("/buildings/main", (request, response) => {
+  response.json(createDashboardBuilding(request.tenantStore));
+});
+
+app.get("/metrics/dashboard", (request, response) => {
+  response.json(createDashboardMetrics(request.tenantStore, tariffKzt));
+});
+
+app.get("/anomalies", (request, response) => {
+  response.json(createDashboardAnomalies(request.tenantStore, tariffKzt));
+});
+
+app.get("/rooms/:roomId/consumption", (request, response) => {
+  response.json(createConsumptionSeries(request.tenantStore, request.params.roomId));
+});
+
+app.get("/rooms/:roomId/devices", (request, response) => {
+  response.json(createDevices(request.tenantStore, request.params.roomId, tariffKzt));
+});
+
+app.get("/rooms/:roomId/recommendation", (request, response) => {
+  response.json(
+    createDashboardRecommendation(request.tenantStore, request.params.roomId)
+  );
+});
+
+app.post("/analysis/run", (request, response) => {
+  const dataset = request.tenantStore.datasets.at(-1);
+  if (!dataset) {
+    return response.status(404).json({ error: "Сначала загрузите CSV с потреблением." });
+  }
+
+  try {
+    request.tenantStore.analysis = analyzeConsumption({
+      measurements: dataset.measurements,
+      premises: request.tenantStore.premises,
+      tariffKzt
+    });
+    return response.json(createAnalysisSummary(request.tenantStore, tariffKzt));
+  } catch (error) {
+    return response.status(422).json({ error: error.message });
+  }
+});
+
+app.post("/tasks", (request, response) => {
+  const { roomId, title, description } = request.body;
+  if (!roomId || !title || !description) {
+    return response.status(400).json({
+      error: "Поля roomId, title и description обязательны."
+    });
+  }
+
+  const task = {
+    id: crypto.randomUUID(),
+    roomId,
+    title,
+    description,
+    status: "open"
+  };
+  request.tenantStore.tasks.push(task);
+  return response.status(201).json(task);
 });
 
 app.use((error, _request, response, _next) => {
