@@ -366,6 +366,10 @@ export async function uploadDataset(file: File): Promise<{ id: string; fileName:
   return remote;
 }
 
+export async function clearDataset(): Promise<void> {
+  await requestApi<void>("/api/datasets", { method: "DELETE" });
+}
+
 export async function runAiAnalysis(): Promise<AnalysisSummary> {
   const remote = await requestApi<AnalysisSummary>("/analysis/run", { method: "POST" });
   if (remote) {

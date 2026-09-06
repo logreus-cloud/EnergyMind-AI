@@ -52,6 +52,13 @@ paths:
       responses:
         "201":
           description: Набор данных загружен
+    delete:
+      summary: Очистить набор данных и результат анализа объекта
+      parameters:
+        - $ref: "#/components/parameters/TenantId"
+      responses:
+        "204":
+          description: Данные объекта очищены
   /api/analyses:
     post:
       summary: Найти аномалии и построить прогноз на семь дней

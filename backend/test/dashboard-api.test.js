@@ -88,4 +88,19 @@ test("serves CSV analysis through the frontend dashboard contract", async (conte
     (response) => response.json()
   );
   assert.deepEqual(tasks, [task]);
+
+  const clearResponse = await fetch(`${apiUrl}/api/datasets`, {
+    method: "DELETE",
+    headers
+  });
+  assert.equal(clearResponse.status, 204);
+
+  const metrics = await fetch(`${apiUrl}/metrics/dashboard`, { headers }).then(
+    (response) => response.json()
+  );
+  assert.deepEqual(metrics, {
+    energyTodayKwh: 0,
+    anomalies: 0,
+    potentialSavingsKzt: 0
+  });
 });

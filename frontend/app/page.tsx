@@ -1,6 +1,6 @@
 "use client";
 
-import { AlertTriangle, Check, ChevronRight, ClipboardCheck, Search, Sparkles, Upload, X } from "lucide-react";
+import { AlertTriangle, Check, ChevronRight, ClipboardCheck, DatabaseZap, Search, Sparkles, Trash2, Upload, X } from "lucide-react";
 import { type ChangeEvent, useEffect, useMemo, useRef, useState } from "react";
 import { FloorPlan } from "../components/FloorPlan/FloorPlan";
 import { KPIBar } from "../components/Dashboard/KPIBar";
@@ -9,6 +9,7 @@ import { TopBar } from "../components/Layout/TopBar";
 import { RoomPanel } from "../components/RoomDetails/RoomPanel";
 import { Button } from "../components/UI/Button";
 import {
+  clearDataset,
   createTask,
   getRecommendations,
   getTasks,
@@ -181,6 +182,7 @@ export default function HomePage() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [uploadedFileName, setUploadedFileName] = useState<string>();
   const [isUploading, setIsUploading] = useState(false);
+  const [isClearing, setIsClearing] = useState(false);
   const progressTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -393,12 +395,7 @@ export default function HomePage() {
     }
   };
 
-  const handleDatasetUpload = async (event: ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) {
-      return;
-    }
-
+  const uploadConsumptionFile = async (file: File) => {
     setIsUploading(true);
     setErrorMessage(undefined);
     try {
@@ -410,7 +407,56 @@ export default function HomePage() {
       setErrorMessage(error instanceof Error ? error.message : "Не удалось загрузить CSV");
     } finally {
       setIsUploading(false);
-      event.target.value = "";
+    }
+  };
+
+  const handleDatasetUpload = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      await uploadConsumptionFile(file);
+    }
+    event.target.value = "";
+  };
+
+  const handleDemoUpload = async () => {
+    try {
+      const response = await fetch("/demo-consumption.csv");
+      if (!response.ok) {
+        throw new Error("Не удалось загрузить демо-CSV.");
+      }
+      const file = new File(
+        [await response.blob()],
+        "demo-consumption.csv",
+        { type: "text/csv" },
+      );
+      await uploadConsumptionFile(file);
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : "Не удалось загрузить демо-CSV");
+    }
+  };
+
+  const handleClearDataset = async () => {
+    if (!window.confirm("Очистить загруженный CSV и результаты анализа для этого объекта?")) {
+      return;
+    }
+
+    setIsClearing(true);
+    setErrorMessage(undefined);
+    try {
+      await clearDataset();
+      setMetrics({ energyTodayKwh: 0, anomalies: 0, potentialSavingsKzt: 0 });
+      setAnomalies([]);
+      setRecommendations([]);
+      setConsumption([]);
+      setDevices([]);
+      setRecommendation(null);
+      setAnalysisSummary(null);
+      setAnalysisState("idle");
+      setUploadedFileName(undefined);
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : "Не удалось очистить данные");
+    } finally {
+      setIsClearing(false);
     }
   };
 
@@ -826,12 +872,30 @@ export default function HomePage() {
                 </Button>
                 <Button
                   type="button"
+                  variant="secondary"
+                  icon={<DatabaseZap size={14} />}
+                  onClick={handleDemoUpload}
+                  disabled={isUploading || isClearing || analysisState === "running"}
+                >
+                  Загрузить демо
+                </Button>
+                <Button
+                  type="button"
                   variant="primary"
                   icon={<Sparkles size={14} />}
                   onClick={startAnalysis}
                   disabled={analysisState === "running"}
                 >
                   {analysisState === "running" ? "Анализируем здание..." : "Запустить AI-анализ"}
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  icon={<Trash2 size={14} />}
+                  onClick={handleClearDataset}
+                  disabled={isUploading || isClearing || analysisState === "running"}
+                >
+                  {isClearing ? "Очищаем..." : "Очистить"}
                 </Button>
                 {uploadedFileName && <span className="em-analysis__dataset">{uploadedFileName}</span>}
               </div>

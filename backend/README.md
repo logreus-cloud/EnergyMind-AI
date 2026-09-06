@@ -26,6 +26,10 @@ timestamp,room_id,consumption_kwh
 The parser also accepts Russian column names: `время`, `помещение`,
 `потребление_квтч`.
 
+`DELETE /api/datasets` removes the uploaded dataset and its analysis result
+for the current tenant only. The demo file used by the frontend is available
+at `../frontend/public/demo-consumption.csv`.
+
 ## Main flow
 
 1. `POST /api/premises` creates or updates room metadata.

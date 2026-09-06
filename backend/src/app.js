@@ -28,7 +28,7 @@ app.use((request, response, next) => {
     process.env.FRONTEND_ORIGIN ?? "http://localhost:3000"
   );
   response.setHeader("Access-Control-Allow-Headers", "Content-Type, X-Tenant-Id");
-  response.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+  response.setHeader("Access-Control-Allow-Methods", "GET, POST, DELETE, OPTIONS");
   if (request.method === "OPTIONS") {
     return response.sendStatus(204);
   }
@@ -107,6 +107,12 @@ app.post("/api/datasets", upload.single("file"), (request, response) => {
   } catch (error) {
     return response.status(400).json({ error: error.message });
   }
+});
+
+app.delete("/api/datasets", (request, response) => {
+  request.tenantStore.datasets = [];
+  request.tenantStore.analysis = null;
+  return response.sendStatus(204);
 });
 
 app.post("/api/analyses", (request, response) => {
