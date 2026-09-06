@@ -10,7 +10,8 @@ import {
   createDashboardBuilding,
   createDashboardMetrics,
   createDashboardRecommendation,
-  createDevices
+  createDevices,
+  getSourceRoomId
 } from "./dashboard.js";
 
 const upload = multer({
@@ -135,11 +136,17 @@ app.post("/api/tasks", (request, response) => {
     });
   }
 
+  const recommendation = request.tenantStore.analysis?.recommendations.find(
+    (item) => item.id === recommendationId
+  );
   const task = {
     id: crypto.randomUUID(),
     recommendationId,
+    roomId: recommendation?.roomId ?? "",
     title,
+    description: recommendation?.explanation ?? title,
     assignee: assignee ?? null,
+    priority: "medium",
     status: "open",
     createdAt: new Date().toISOString()
   };
@@ -203,11 +210,18 @@ app.post("/tasks", (request, response) => {
     });
   }
 
+  const recommendation = request.tenantStore.analysis?.recommendations.find(
+    (item) => item.roomId === getSourceRoomId(roomId)
+  );
   const task = {
     id: crypto.randomUUID(),
     roomId,
     title,
     description,
+    recommendationId: recommendation?.id,
+    assignee: null,
+    priority: "medium",
+    createdAt: new Date().toISOString(),
     status: "open"
   };
   request.tenantStore.tasks.push(task);

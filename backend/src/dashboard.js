@@ -47,7 +47,7 @@ function createRoom(id, name, type, floor, areaM2, x, y) {
   };
 }
 
-function normalizeRoomId(roomId) {
+export function getSourceRoomId(roomId) {
   const room = DASHBOARD_BUILDING.floors
     .flatMap((floor) => floor.rooms)
     .find((candidate) => candidate.id === roomId || candidate.name === roomId);
@@ -139,7 +139,7 @@ export function createDashboardAnomalies(store, tariffKzt) {
 }
 
 export function createConsumptionSeries(store, dashboardRoomId) {
-  const roomId = normalizeRoomId(dashboardRoomId);
+  const roomId = getSourceRoomId(dashboardRoomId);
   const measurements = (store.datasets.at(-1)?.measurements ?? []).filter(
     (measurement) => measurement.roomId === roomId
   );
@@ -162,7 +162,7 @@ export function createConsumptionSeries(store, dashboardRoomId) {
 }
 
 export function createDevices(store, dashboardRoomId, tariffKzt) {
-  const roomId = normalizeRoomId(dashboardRoomId);
+  const roomId = getSourceRoomId(dashboardRoomId);
   const premise = store.premises.get(roomId);
   const consumption = createConsumptionSeries(store, dashboardRoomId);
   const totalKwh = consumption.reduce((sum, point) => sum + point.actualKwh, 0);
@@ -200,7 +200,7 @@ export function createDevices(store, dashboardRoomId, tariffKzt) {
 }
 
 export function createDashboardRecommendation(store, dashboardRoomId) {
-  const roomId = normalizeRoomId(dashboardRoomId);
+  const roomId = getSourceRoomId(dashboardRoomId);
   const recommendation = recommendationForRoom(store.analysis, roomId);
   if (!recommendation) {
     return null;

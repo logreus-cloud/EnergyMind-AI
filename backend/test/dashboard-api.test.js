@@ -68,4 +68,24 @@ test("serves CSV analysis through the frontend dashboard contract", async (conte
   ).then((response) => response.json());
   assert.equal(recommendation.roomId, "f2-a-203");
   assert.ok(recommendation.expectedSavingKzt > 0);
+
+  const taskResponse = await fetch(`${apiUrl}/tasks`, {
+    method: "POST",
+    headers: { ...headers, "Content-Type": "application/json" },
+    body: JSON.stringify({
+      roomId: "f2-a-203",
+      title: "Проверить HVAC",
+      description: "Проверить расписание кондиционера."
+    })
+  });
+  const task = await taskResponse.json();
+  assert.equal(taskResponse.status, 201);
+  assert.equal(task.recommendationId, recommendation.id);
+  assert.equal(task.priority, "medium");
+  assert.ok(task.createdAt);
+
+  const tasks = await fetch(`${apiUrl}/api/tasks`, { headers }).then(
+    (response) => response.json()
+  );
+  assert.deepEqual(tasks, [task]);
 });
